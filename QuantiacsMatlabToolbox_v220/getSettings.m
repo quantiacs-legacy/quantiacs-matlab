@@ -114,30 +114,8 @@ for j=numel(lineBreaks)
     end
 end
 
-% Set 'markets' field
-parLine = 'settings.markets\s*=\s*';
-[sIndex, ~, ~, matchStr, ~, ~, splitStr] = regexp(text, parLine);
-
-if any(sIndex) 
-    sIndex   = sIndex(1);
-    splitStr = splitStr{2};
-    [sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(splitStr, '{(.*?)}');
-    if ~isempty(matchStr)
-        matchStr = matchStr{1};
-        matchStr = matchStr(2:end-1);
-        marketList = regexp(matchStr, '''(.[^'']*)''','tokens');
-        for k = 1:size(marketList,2)
-            newMarket = marketList{k};
-            settings.markets{k} = newMarket{1};
-        end
-    else
-        disp('getSettings: Error parsing market settings.');
-    end
-else
-    settings.markets   = {};
-end
-
 % Pre-set the fields to default values
+settings.markets = {};
 settings.lookback = 504;
 settings.budget = 1000000;
 settings.slippage = 0.05;
@@ -154,8 +132,6 @@ settings.sampleend = inf;
 fields = fieldnames(settings);
 for ii = 1:length(fields)
     setSettingsField(fields{ii})
-    disp('setting')
-    disp(fields{ii})
 end
 
 % A nested function in getSettings()
@@ -164,8 +140,10 @@ end
     function setSettingsField(fieldName)
         exp_pre = '\s*%*\s*settings.';
         if strcmp(fieldName, 'markets')
-            exp_post = '\s*=\s*';
+            exp_post = '\s*=\s*{(.*?)}';
         else
+            % since all the non-markets fields are set set to number, we
+            % can use the same regex expression
             exp_post = '\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
         end
         % build regex expression
@@ -173,14 +151,22 @@ end
         [sIndex, ~, ~, matchStrs, ~, ~, ~] = regexp(text, parLine);
         
         if any(sIndex)
-            if strcmp(fieldName, 'markets')
-                
-            else
-                for i = 1:(numel(matchStrs))
-                    matchStr = matchStrs{i};
-                    if strContains(matchStr, '%')
-                        continue
+            for i = 1:(numel(matchStrs))
+                matchStr = matchStrs{i};
+                if strContains(matchStr, '%')
+                    % skip if current line is a comment
+                    continue
+                end
+                if strcmp(fieldName, 'markets')
+                    % set markets list
+                    marketList = regexp(matchStr, '''(.[^'']*)''','tokens');
+                    settings.markets = {}; % reset markets list
+                    for m = 1:size(marketList,2)
+                        newMarket = marketList{m};
+                        settings.markets{m} = newMarket{1};
                     end
+                else
+                    % set the other fields
                     [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
                     settings.(fieldName) = str2double(matchStr{1});
                 end
