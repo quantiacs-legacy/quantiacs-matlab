@@ -15,7 +15,7 @@ function [settings] = getSettings(tsN)
 %                                 scanned
 %
 % RETURNS:
-% 
+%
 % settings               STRUCT
 % settings.arguments     CELL ARRAY of strings with arguments of the trading system
 % settings.markets       CELL ARRAY of strings with the list of market
@@ -95,7 +95,8 @@ for j=numel(lineBreaks)
     if ~any(braket1); braket1 = 0;   end;
     if ~any(braket2); braket2 = 0;   end;
     
-    if fun(1) < comment && equ(1) < comment  && braket1(1) < comment && braket2(1) < comment && fun && braket1 && braket2 && equ
+    if fun(1) < comment && equ(1) < comment  && braket1(1) < comment && ...
+            braket2(1) < comment && fun && braket1 && braket2 && equ
         
         [sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(thisLine, '\((.*?)\)');
         if ~isempty(matchStr)
@@ -113,10 +114,11 @@ for j=numel(lineBreaks)
     end
 end
 
+% Set 'markets' field
 parLine = 'settings.markets\s*=\s*';
 [sIndex, ~, ~, matchStr, ~, ~, splitStr] = regexp(text, parLine);
 
-if any(sIndex)
+if any(sIndex) 
     sIndex   = sIndex(1);
     splitStr = splitStr{2};
     [sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(splitStr, '{(.*?)}');
@@ -135,138 +137,61 @@ else
     settings.markets   = {};
 end
 
-parLine = 'settings.lookback\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
+% Pre-set the fields to default values
+settings.lookback = 504;
+settings.budget = 1000000;
+settings.slippage = 0.05;
+settings.participation = 0.1;
+settings.rollbug = 0;
+settings.incentivefee = 0;
+settings.managementfee = 0;
+settings.generateorders = 0;
+settings.discrete = 0;
+settings.samplebegin = 0;
+settings.sampleend = inf;
 
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.lookback = str2double(matchStr{1});
-else
-    % Default lookback
-    settings.lookback = 504;
+% Set each field in settings
+fields = fieldnames(settings);
+for ii = 1:length(fields)
+    setSettingsField(fields{ii})
+    disp('setting')
+    disp(fields{ii})
 end
 
-parLine = 'settings.budget\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.budget = str2double(matchStr{1});
-else
-    % Default budget
-    settings.budget = 1000000;
+% A nested function in getSettings()
+% Parse the file to find settings for corresponding fieldName.
+% If a field is not set in the file, a default value is used.
+    function setSettingsField(fieldName)
+        exp_pre = '\s*%*\s*settings.';
+        if strcmp(fieldName, 'markets')
+            exp_post = '\s*=\s*';
+        else
+            exp_post = '\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
+        end
+        % build regex expression
+        parLine = strcat(exp_pre, fieldName, exp_post);
+        [sIndex, ~, ~, matchStrs, ~, ~, ~] = regexp(text, parLine);
+        
+        if any(sIndex)
+            if strcmp(fieldName, 'markets')
+                
+            else
+                for i = 1:(numel(matchStrs))
+                    matchStr = matchStrs{i};
+                    if strContains(matchStr, '%')
+                        continue
+                    end
+                    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
+                    settings.(fieldName) = str2double(matchStr{1});
+                end
+            end
+        end
+    end
 end
 
-parLine = 'settings.slippage\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.slippage = str2double(matchStr{1});
-else
-    % Default slippage
-    settings.slippage = 0.05;
-end
-
-parLine = 'settings.participation\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.participation = str2double(matchStr{1});
-else
-    % Default participation
-    settings.participation = 0.1;
-end
-
-
-parLine = 'settings.rollbug\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.rollbug = str2double(matchStr{1});
-else
-    % Default lookback
-    settings.rollbug = 0;
-end
-
-
-parLine = 'settings.incentivefee\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.incentivefee = str2double(matchStr{1});
-else
-    % Default lookback
-    settings.incentivefee = 0;
-end
-
-parLine = 'settings.managementfee\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.managementfee = str2double(matchStr{1});
-else
-    % Default lookback
-    settings.managementfee = 0;
-end
-
-
-parLine = 'settings.generateorders\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.generateorders = str2double(matchStr{1});
-else
-    % Default lookback
-    settings.generateorders = 0;
-end
-
-
-parLine = 'settings.discrete\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.discrete = str2double(matchStr{1});
-else
-    settings.discrete = 0;
-end
-
-
-parLine = 'settings.samplebegin\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.samplebegin = str2double(matchStr{1});
-else
-    settings.samplebegin = 0;
-end
-
-parLine = 'settings.sampleend\s*=\s*[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?';
-[sIndex, ~, ~, matchStr, ~, ~, ~] = regexp(text, parLine);
-
-if any(sIndex)
-    matchStr = matchStr{1};
-    [~, ~, ~, matchStr, ~, ~, ~] = regexp(matchStr, '[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?');
-    settings.sampleend = str2double(matchStr{1});
-else
-    settings.sampleend = inf;
-end
-
+% Helper function
+% Return a boolean indicates whether str contains pattern
+function [bool_contains] = strContains(str, pattern)
+index = strfind(str, pattern);
+bool_contains = any(index);
 end
