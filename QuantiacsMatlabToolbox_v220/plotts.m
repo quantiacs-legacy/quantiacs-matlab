@@ -9,7 +9,7 @@ function [factsheet] = plotts(res)
     tsName = ress.tsName;
     if ~exist('tsName','var'); tsName = 'Tradingsystem';end
 
-
+ 
     factsheet = figure('Color',[1 1 1]); %, 'units','normalized','outerposition',[0 0 1 1]
 
     plottt1(1,1);
