@@ -67,7 +67,7 @@ else
     return;
 end
 
-if exist(tsN, 'file') ~= 2;
+if exist(tsN, 'file') ~= 2
     disp(['getSettings: Tradingsystem ' tsN ' not found.']);
     return;
 end
@@ -77,7 +77,6 @@ end
 text = fileread(tsN);
 
 % Scan Function Arguments
-
 lineBreaks = regexp(text,'\n');
 lineStarts = [1 lineBreaks(1:end-1)];
 for j=numel(lineBreaks)
@@ -89,11 +88,11 @@ for j=numel(lineBreaks)
     braket1 = regexp(thisLine, '\(');
     braket2 = regexp(thisLine, '\)');
     
-    if ~any(comment); comment = inf; end;
-    if ~any(fun);     fun = 0;       end;
-    if ~any(equ);     equ = 0;       end;
-    if ~any(braket1); braket1 = 0;   end;
-    if ~any(braket2); braket2 = 0;   end;
+    if ~any(comment); comment = inf; end
+    if ~any(fun);     fun = 0;       end
+    if ~any(equ);     equ = 0;       end
+    if ~any(braket1); braket1 = 0;   end
+    if ~any(braket2); braket2 = 0;   end
     
     if fun(1) < comment && equ(1) < comment  && braket1(1) < comment && ...
             braket2(1) < comment && fun && braket1 && braket2 && equ
@@ -136,8 +135,10 @@ end
 
 % A nested function in getSettings()
 % Parse the file to find settings for corresponding fieldName.
-% If a field is not set in the file, a default value is used.
+% If a field is not set in the file (or commented out), a default value is used.
     function setSettingsField(fieldName)
+        % exp_pre - regex before equal sign. e.g, settings.lookback
+        % exp_post - regex after (included) eqaul sign. e.g., = 504
         exp_pre = '\s*%*\s*settings.';
         if strcmp(fieldName, 'markets')
             exp_post = '\s*=\s*{(.*?)}';
@@ -159,7 +160,7 @@ end
                 end
                 if strcmp(fieldName, 'markets')
                     % set markets list
-                    marketList = regexp(matchStr, '''(.[^'']*)''','tokens');
+                    marketList = regexp(matchStr, '''(.[^'']*)''', 'tokens');
                     settings.markets = {}; % reset markets list
                     for m = 1:size(marketList,2)
                         newMarket = marketList{m};
