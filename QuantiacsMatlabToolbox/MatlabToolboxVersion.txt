@@ -1,2 +1,2 @@
-Version: 2.2
+Version: 2.2.1
 Message: We have a new Factsheet!
